@@ -1,185 +1,360 @@
 <template>
-  <div id="app">
-    
-    <header :style="{ height: headerHeight }">
-    <p class="bannarname">현재 개설된 방</p>
-    </header>
-    <div class="link-container">
-          <!-- <RouterLink :to="'/room/' + room.access_code" v-for="room in rooms" :key="room.access_code"> -->
-      <!-- <RouterLink :to="'/room/' + 'Gqe3GwHFoK'"> -->
-        <div>
-        <button v-for="room in rooms" :key="room">
-          {{ room }}
-        </button>
-      <!-- </RouterLink> -->
+  <main>
+      <header>
+          <img src="../assets/img/logo_ssaffe_2nd.png" alt="logo_ssaffe_2nd" style="height: 72px; padding-right: 10px;">
+    <div style="margin-right: 0;">
+      SSAFFE®
     </div>
+    <div style="margin-right: auto; font-size: 8px; transform: translateY(-8px);">
+      for Manager
     </div>
 
-    <div class="link-container">
-      <RouterLink to="CreateRoomView">
-        <button class = "plusbutton plusbutton:hover">+</button>
-      </RouterLink>
+      <div class="shop-name" :class="{ isfold: isFold }" @click="toggleShop">{{ shopname }} {{ tri }}
+        <div v-if="isFold">
+          <div class="edit-info"><hr>기본정보 수정</div>
+          <div class="edit-my-menu"><hr>내 가게 메뉴 편집</div>
+        </div>
+      </div>
+      </header>
+  <hr>
+  <body>
+    <div class="body-container">
+      <div style="width: 600px; height: 100%;">
+        <div class="input-container">
+          <div class="input">
+            <div class="input-title">가게명</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="text" v-model="shopName">
+            </div>
+          </div>
+          <div class="input">
+            <div class="input-title">비밀번호 변경</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="password" v-model="password">
+            </div>
+          </div>
+          <div>{{ passwordFeedbackMessage }}</div>
+          <div class="input">
+            <div class="input-title">비밀번호 확인</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="password" v-model="confirmPassword">
+            </div>
+          </div>
+          <div>{{ confirmPasswordFeedbackMessage }}</div>
+
+          <div class="input">
+            <div class="input-title">대표전화번호</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="text" v-model="phoneNumber">
+            </div>
+          </div>
+          <div>{{ phoneNumberFeedbackMessage }}</div>
+          <div class="input">
+            <div class="input-title">주소</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="text" v-model="shopAddress">
+            </div>
+          </div>
+          <div class="input">
+            <div class="input-title">임시휴업</div>
+            <div class="input-content-container" style="justify-content: space-between;">
+              <input @click="closeShop" class="button" :class="{clicked: state.isClosed}" type="button" value="ON">
+              <input @click="openShop" class="button" :class="{clicked: !state.isClosed}" type="button" value="OFF">
+            </div>
+          </div>
+          <div class="input">
+            <div class="input-title">최소주문금액</div>
+            <div class="input-content-container">
+              <input class="input-text-big" type="number" v-model="minimumOrderAmount">
+            </div>
+          </div>
+        </div>
+        <div class="input">
+            <div class="input-title"></div>
+            <div class="input-content-container" style="justify-content: space-between;">
+              <input style="color: black;" @click="applyShopSettingWithValidation" class="button positive" :class="{clicked: state.isApplied }" type="button" value="적용">
+              <input style="color: black;" @click="cancelShopSetting" class="button negative" :class="{clicked: state.isCanceled }" type="button" value="취소">
+              <label className="input-file-button" for="input-file">파일 업로드</label>
+              <input type="file" id="input-file" style="display:none;"/> 
+            </div>
+          </div>
+      </div>
     </div>
-    <div class="link-container">
-      <router-link :to="{ name: 'After', params: { access_code: 'dKrOpvDFvS' } }">
-        <button>After</button>
-      </router-link>
-      <!-- <RouterLink to="After">
-      <button > After</button>
-    </RouterLink> -->
-    </div>
-  </div>
+  </body>
+  </main>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { ref, computed, reactive, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from "vue-router";
+import { getCreator, getOrderList } from '@/api/after.js'
+const route = useRoute();
+const router = useRouter();
 
-import { getPartiesToday } from "@/api/party";
+const shopname = ref("컴포즈커피_광주장덕수완점");
+const isFold = ref(false);
 
-// createapp, mount함수는 진입점(index.js, main.js)에서 사용함
+const tri = computed(() => { 
+return isFold.value ? "▲": "▼"});
 
-// console.log(getPartiesToday())
-const queryParams = {
-  date: "2024-01-31",
+const toggleShop = () => {
+console.log("toggle")
+isFold.value = !isFold.value;
 };
-const rooms = ref([]);
-// 성공 콜백 함수를 정의합니다.
-function onSuccess(response) {
-  // 서버 응답의 data 속성에 접근합니다.
-  const responseData = response.data;
-  console.log(response);
-  // 이후 responseData를 사용하여 필요한 처리를 수행합니다.
-  // 예: responseData가 배열인 경우, 각 요소를 출력
-  if (Array.isArray(responseData)) {
-    responseData.forEach((item) => {
-      rooms.value.push(item.name);
-      console.log(item.name);
-    });
+
+const openShop = () => {
+state.isClosed = false;
+};
+
+const closeShop = () => {
+state.isClosed = true;
+};
+
+const applyShopSetting = () => {
+state.isApplied = true;
+state.isCanceled = false;
+};
+
+const cancelShopSetting = () => {
+state.isApplied = false;
+state.isCanceled = true;
+};
+
+const state = reactive({
+isClosed: false,
+isApplied: false,
+isCanceled: false,
+})
+
+const shopName = ref("");
+const passwordToChange = ref("");
+const passwordToCertify = ref("");
+const managerPhoneNumber = ref("");
+const shopAddress = ref("");
+
+
+// 유효성 추가
+
+// 데이터 정의
+const phoneNumber = ref('010-');
+const phoneNumberFeedbackMessage = ref('');
+const password = ref('');
+const confirmPassword = ref('');
+const passwordFeedbackMessage = ref('');
+const confirmPasswordFeedbackMessage = ref('');
+
+// 전화번호 유효성 검사
+watch(phoneNumber, () => {
+  if (phoneNumber.value === '') {
+    phoneNumberFeedbackMessage.value = '';
+    return;
+  }
+  const regexComplete = /^01[016789]-\d{3,4}-\d{4}$/;
+  const regexPartial = /^01[016789](-\d{0,4})?(-\d{0,4})?$/;
+
+  if (regexComplete.test(phoneNumber.value)) {
+    phoneNumberFeedbackMessage.value = "";
+  } else if (regexPartial.test(phoneNumber.value)) {
+    phoneNumberFeedbackMessage.value = "입력 중...";
   } else {
-    // responseData가 객체 또는 다른 형태인 경우의 처리
-    console.log(responseData);
+    phoneNumberFeedbackMessage.value = "입력형식이 올바르지 않습니다.";
   }
-}
-
-// 실패 콜백 함수를 정의합니다.
-function onFailure(error) {
-  console.error("실패:", error);
-}
-
-// getPartiesToday 함수를 호출합니다.
-getPartiesToday(queryParams, onSuccess, onFailure);
-
-//fetch로
-function getParties() {
-  fetch("http://localhost/api/v1/parties")
-    .then((response) => {
-      // 응답 헤더에서 Location에 접근
-      const location = response.headers.get("Location");
-      console.log("Location:", location);
-      console.log(response);
-      return response.json(); // 또는 적절한 응답 처리
-    })
-    .then((data) => {
-      console.log("Received data:", data);
-    })
-    .catch((error) => {
-      console.error("An error occurred:", error);
-    });
-}
-
-onMounted(() => {
-  getParties();
 });
-  </script>
-  
-  
-  <style scoped>
-  
-  /* header {
-    background-color: #344a53;
-    color: #e9fcff;
-    padding: 10px;
-    height: 77px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  } */
-  #app > span {
-    font-size: 30px;
-    background-color: black;
-    display: flex; 
-    justify-content: center;
-    color:white;
-    box-sizing: border-box;
-    width: 100%;
-    } 
-  
-    .link-container {
-    display: flex;
-    justify-content: center;
-    width: 100%; /* 전체 너비를 차지하도록 설정 */
-    }
-  
-  button {
-    font-size: 20px; /* 폰트 크기 설정 */
-    background-color: 52,74,83; /* 배경색 설정 */
-    color: black; /* 글자색 설정 */
-    padding: 10px 20px; /* 상하, 좌우 패딩 설정 */
-    border: none; /* 테두리 제거 */
-    border-radius: 5px; /* 테두리 둥글게 */
-    width: 800px;
-    display: flex;
-    margin-top: 20px;
-    justify-content: center;
+
+// 비밀번호 유효성 검사
+watch(password, () => {
+  if (password.value === '') {
+    passwordFeedbackMessage.value = ''; 
+    return;
+  }
+  const hasUpperCase = /[A-Z]/.test(password.value);
+  const hasLowerCase = /[a-z]/.test(password.value);
+  const hasNumbers = /\d/.test(password.value);
+  const hasMinLength = password.value.length >= 8;
+
+  if (hasUpperCase && hasLowerCase && hasNumbers && hasMinLength) {
+    passwordFeedbackMessage.value = "";
+  } else {
+    passwordFeedbackMessage.value = "비밀번호는 8자 이상이며, 대문자, 소문자, 숫자를 포함해야 합니다.";
+  }
+});
+
+// 비밀번호 확인 유효성 검사
+watch([password, confirmPassword], () => {
+  if (confirmPassword.value === '') {
+    confirmPasswordFeedbackMessage.value = '';
+    return;
   }
 
-  .plusbutton {
-    font-size: 20px; /* 폰트 크기 설정 */
-    background-color: 52,74,83; /* 배경색 설정 */
-    color: black; /* 글자색 설정 */
-    padding: 10px 20px; /* 상하, 좌우 패딩 설정 */
-    border: none; /* 테두리 제거 */
-    border-radius: 5px; /* 테두리 둥글게 */
-    cursor: pointer; /* 커서 모양을 손가락 모양으로 */
-    width: 800px;
-    display: flex;
-    margin-top: 20px;
-    justify-content: center;
+  if (password.value === confirmPassword.value) {
+    confirmPasswordFeedbackMessage.value = "";
+  } else {
+    confirmPasswordFeedbackMessage.value = "비밀번호가 일치하지 않습니다.";
   }
-  
-  .plusbutton:hover {
-    background-color: blue; /* 버튼에 마우스를 올렸을 때 배경색 변경 */
-  }
-  
-  .link-container a {
-    text-decoration: none; /* 밑줄 제거 */
-  }
+});
+</script>
 
-  
+<style lang="scss" scoped>
+main {
+  height: 100%;
+}
+
 header {
-  background-color: #344a53;
-  color: #e9fcff;
-  min-height: 70px;
   display: flex;
-  font-size: 24px;
-  justify-content: space-between;
   align-items: center;
-}
-/* 화면 폭이 768px 미만일 때 */
-@media screen and (max-width: 768px) {
-  header {
-    font-size: 18px; /* 화면이 작을 때 텍스트 크기 조절 */
-  }
-}
-.bannarname {
-  display: flex;
-  /* font-size: 30px; */
-  margin: 20px;
+  flex-direction: row;
+  width: 100%;
+  height: 72px;
+  font-size: 30px;
   font-weight: bold;
-    display: flex; 
-    justify-content: center;
-    width: 100%;
+      white-space: normal;
+  background-color: white;
+  // border: 1px solid black;
+  // z-index: 20;
 }
-  
-  </style>
-  
+
+body {
+  margin: 0px;
+}
+
+.body-container {
+  // background-color: pink;
+  width: 100%;
+  height: 88vh;
+  display: flex;
+  flex-direction: column;
+  // justify-content: center;
+  // align-content: center;
+}
+
+.isfold {
+  color: black;
+  background-color: #97AFBA;
+  border-radius: 10px 10px 0px 0px;
+  border-top: 2px solid black;
+  border-left: 2px solid black;
+  border-right: 2px solid black;
+}
+
+hr {
+  width: 90%;
+  padding: 0px;
+  margin: 0px;
+      border: none;
+      border-top: 2px solid black;
+      width: 100%;
+}
+
+.shop-name {
+  color: #296A84; 
+  width: 450px; 
+  height:60px; 
+  line-height: 60px; 
+  text-align: center; 
+  margin-right: 10px; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  margin-right: 10px;
+  cursor: pointer;
+  z-index: 30;
+}
+
+.edit-info {
+  width: 450px;
+  height:60px; 
+  line-height: 60px;
+  background-color: #97AFBA;
+  border-left: 2px solid black;
+  border-right: 2px solid black; 
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+} 
+.edit-my-menu {
+  width: 450px;
+  height:60px; 
+  line-height: 60px;
+  background-color: #97AFBA;
+  border-left: 2px solid black;
+  border-right: 2px solid black; 
+  border-bottom: 2px solid black;
+  text-align: center; 
+  border-radius: 0px 0px 10px 10px;
+  display: flex; flex-direction: column; align-items: center;
+  }
+
+.input-title {
+  width: 200px; 
+  height: 50px; 
+  text-align: center; 
+  line-height: 50px; 
+  font-size: 20px; 
+  font-weight: bold;
+}
+
+.input-content-container {
+  width: 100%;  
+  box-sizing: content-box;
+  display: flex;
+}
+
+.input-text-big {
+  height: 100%; 
+  width: 100%; 
+  border: 0; 
+  padding-left: 20px; 
+  margin-left: 0; 
+  border-radius: 25px; 
+  border: 2px solid black;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.input-text-small {
+  height: 100%; 
+  width: 200px; 
+  border: 0; 
+  // padding-left: 20px;  
+  border-radius: 25px; 
+  border: 2px solid black;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.input {
+  display: flex; 
+  margin: 10px;
+}
+
+.button {
+  font-size: 20px;
+  font-weight: bold;
+  border: 0px;
+  padding: 10px;
+  margin-left: 10px;
+  border-radius: 40px;
+  width: 120px;
+  height: 50px;
+  // line-height: ;
+  color: white;
+}
+
+.clicked {
+  filter: brightness(0.6);
+}
+
+.positive {
+  background-color: #36BAC3;
+}
+
+.negative {
+  background-color: #EB4E5A;
+}
+
+.input-file-button{
+padding: 6px 25px;
+background-color:#FF6600;
+border-radius: 4px;
+color: white;
+cursor: pointer;}
+</style>
